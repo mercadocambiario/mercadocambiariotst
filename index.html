@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mercado Cambiario Test</title>
+
+  <!-- Estilos (CSS) -->
+  <style>
+    .home-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      padding: 20px;
+    }
+    /* Tarjeta general */
+    .tarjeta {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 15px;
+    }
+    .header-compra {
+      background-color: #4CAF50;
+      color: white;
+      text-align: center;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .header-venta {
+      background-color: #F44336;
+      color: white;
+      text-align: center;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .header-historial {
+      background-color: #FFC107;
+      color: white;
+      text-align: center;
+      padding: 10px;
+      border-radius: 4px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+      user-select: none; /* Para evitar que se seleccione al hacer click */
+      cursor: default;   /* Cursor normal */
+    }
+    thead {
+      background-color: #f0f0f0;
+      font-weight: bold;
+    }
+    tr:hover {
+      background-color: #fafafa;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .home-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 700px) {
+      .home-grid {
+        grid-template-columns: 1fr;
+      }
+      table {
+        font-size: 0.9rem;
+      }
+    }
+
+    .tarjeta-dolar-peru {
+      margin: 20px;
+    }
+    .dolarperu-card {
+      display: flex;
+      flex-direction: column;
+    }
+    .header-dolarperu {
+      background-color: #2196F3;
+      color: white;
+      text-align: center;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .dolarperu-info {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-around;
+      align-items: center;
+      gap: 20px;
+    }
+    .info-bloque {
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 8px;
+      min-width: 120px;
+      text-align: center;
+    }
+
+    .simulador-cambio {
+      margin: 20px;
+    }
+    .simulador-card {
+      padding: 20px;
+    }
+    .header-simulador {
+      background-color: #673AB7;
+      color: white;
+      text-align: center;
+      padding: 10px;
+      border-radius: 4px;
+    }
+
+    /* Pequeños ajustes para formularios e inputs */
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    /* Estilos opcionales para destacar la columna con sort */
+    .sortable-col:hover {
+      background-color: #e0e0e0;
+      cursor: pointer; /* Dar la idea de que es clickeable */
+    }
+  </style>
+</head>
+<body>
+
+<!-- SECCIÓN DE SUNAT / DÓLAR PERÚ-->
+<div class="tarjeta-dolar-peru">
+  <div class="tarjeta dolarperu-card">
+    <div class="header-dolarperu">
+      <h2>Dólar Perú (Sunat y Paralelo)</h2>
+    </div>
+    <div class="dolarperu-info" id="dolarperuInfo" style="display: none;">
+      <!-- Bloque Sunat -->
+      <div class="info-bloque">
+        <h4>Sunat</h4>
+        <p>Compra: <span id="sunatCompra"></span></p>
+        <p>Venta: <span id="sunatVenta"></span></p>
+      </div>
+      <!-- Bloque Paralelo -->
+      <div class="info-bloque">
+        <h4>Paralelo</h4>
+        <p>Compra: <span id="paraleloCompra"></span></p>
+        <p>Venta: <span id="paraleloVenta"></span></p>
+      </div>
+      <!-- Última Fecha/Hora de actualización -->
+      <div class="info-bloque">
+        <h4>Actualizado</h4>
+        <p id="fechaActualizacion"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECCIÓN DE SIMULACIÓN DE CAMBIO -->
+<div class="simulador-cambio">
+  <div class="tarjeta simulador-card">
+    <div class="header-simulador">
+      <h2>Simulador de Cambio</h2>
+    </div>
+    <div>
+      <form id="simuladorForm">
+        <!-- Selección de Casa de Cambio -->
+        <div class="form-group">
+          <label for="casaSeleccionada">Casa de Cambio</label>
+          <select id="casaSeleccionada">
+            <!-- Opciones generadas dinámicamente -->
+          </select>
+        </div>
+
+        <!-- Selección de tipo de operación (Compra/Venta) -->
+        <div class="form-group">
+          <label for="tipoOperacion">Tipo de Operación</label>
+          <select id="tipoOperacion">
+            <option value="compra">Compra</option>
+            <option value="venta">Venta</option>
+          </select>
+        </div>
+
+        <!-- Input de monto -->
+        <div class="form-group">
+          <label for="monto">Monto</label>
+          <input type="number" id="monto" />
+        </div>
+
+        <!-- Selección de moneda (Soles/Dólares) -->
+        <div class="form-group">
+          <label for="moneda">Moneda</label>
+          <select id="moneda">
+            <option value="soles">Soles</option>
+            <option value="dolares">Dólares</option>
+          </select>
+        </div>
+      </form>
+
+      <!-- Resultados de la simulación -->
+      <div id="resultados" style="display: none;">
+        <h3>Resultados:</h3>
+        <p>Monto convertido: <strong id="montoConvertido"></strong></p>
+        <p>Comparación con Sunat: <strong id="comparacionSunat"></strong></p>
+        <p>Comparación con Paralelo: <strong id="comparacionParalelo"></strong></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECCIÓN DE CASAS DE CAMBIO -->
+<div class="home-grid">
+  <!-- Tarjeta de COMPRA -->
+  <div class="tarjeta compra">
+    <div class="header-compra">
+      <h2>Compra</h2>
+    </div>
+    <div>
+      <table id="compraTable">
+        <thead>
+          <tr>
+            <th>Casa de Cambio</th>
+            <!-- Al hacer click en este <th> se alterna la forma de ordenar (none->asc->desc) -->
+            <th 
+              class="sortable-col" 
+              id="thCompra" 
+              onclick="toggleSortCompra()"
+            >
+              Precio Compra
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Filas generadas dinámicamente -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tarjeta de VENTA -->
+  <div class="tarjeta venta">
+    <div class="header-venta">
+      <h2>Venta</h2>
+    </div>
+    <div>
+      <table id="ventaTable">
+        <thead>
+          <tr>
+            <th>Casa de Cambio</th>
+            <!-- Mismo concepto para Venta -->
+            <th 
+              class="sortable-col" 
+              id="thVenta" 
+              onclick="toggleSortVenta()"
+            >
+              Precio Venta
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Filas generadas dinámicamente -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tarjeta de HISTORIAL DE CAMBIOS -->
+  <div class="tarjeta historial">
+    <div class="header-historial">
+      <h2>Historial de Cambios</h2>
+    </div>
+    <div>
+      <table id="historialTable">
+        <thead>
+          <tr>
+            <th>Casa de Cambio</th>
+            <th>Compra</th>
+            <th>Venta</th>
+            <th>Hora</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Filas generadas dinámicamente -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Script JS (Vanilla) -->
+<script>
+  // Variables globales para almacenar datos
+  const baseUrl = 'https://fastapi-production-4333.up.railway.app';
+
+  let casasArray = [];         // Se guardará el array original proveniente de la API
+  let historialArray = [];
+  let dolarPeruData = null;    // { fecha, sunat, paralelo }
+
+  // Para manejar el estado de orden en cada columna
+  // 'none' => sin ordenar (original), 'asc' => menor a mayor, 'desc' => mayor a menor
+  let sortStateCompra = 'none';
+  let sortStateVenta  = 'none';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadCasas();
+    loadHistorial();
+    loadDolarPeru();
+
+    // Escuchamos cambios en los campos del simulador
+    const simuladorForm = document.getElementById('simuladorForm');
+    simuladorForm.addEventListener('input', calcularCambio);
+    simuladorForm.addEventListener('change', calcularCambio);
+  });
+
+  // ================================
+  // FETCH: Casas de cambio
+  // ================================
+  function loadCasas() {
+    fetch(`${baseUrl}/casas`)
+      .then(response => response.json())
+      .then(data => {
+        console.log('Casas =>', data);
+        const array = Array.isArray(data) ? data : (Array.isArray(data.casas) ? data.casas : []);
+        if (!Array.isArray(array)) {
+          console.error('Error: La API no devolvió un array válido en "casas"', data);
+          return;
+        }
+        casasArray = array;  // guardamos el array original
+        fillCompraTable(casasArray);
+        fillVentaTable(casasArray);
+        fillCasaSeleccionada(casasArray);
+      })
+      .catch(err => console.error('Error al cargar casas:', err));
+  }
+
+  // Rellena tabla de COMPRA
+  function fillCompraTable(data) {
+    const tbody = document.querySelector('#compraTable tbody');
+    tbody.innerHTML = ''; // Limpia filas anteriores
+
+    data.forEach(casa => {
+      const row = document.createElement('tr');
+
+      const cellName = document.createElement('td');
+      cellName.textContent = casa.name;
+      row.appendChild(cellName);
+
+      const cellBuy = document.createElement('td');
+      cellBuy.textContent = casa.buy;
+      row.appendChild(cellBuy);
+
+      tbody.appendChild(row);
+    });
+  }
+
+  // Rellena tabla de VENTA
+  function fillVentaTable(data) {
+    const tbody = document.querySelector('#ventaTable tbody');
+    tbody.innerHTML = '';
+
+    data.forEach(casa => {
+      const row = document.createElement('tr');
+
+      const cellName = document.createElement('td');
+      cellName.textContent = casa.name;
+      row.appendChild(cellName);
+
+      const cellSell = document.createElement('td');
+      cellSell.textContent = casa.sell;
+      row.appendChild(cellSell);
+
+      tbody.appendChild(row);
+    });
+  }
+
+  // Rellena el <select> de "Casa de Cambio" en el simulador
+  function fillCasaSeleccionada(data) {
+    const select = document.getElementById('casaSeleccionada');
+    select.innerHTML = '';
+
+    // Opción por defecto
+    const optionDefault = document.createElement('option');
+    optionDefault.value = '';
+    optionDefault.textContent = 'Seleccionar casa...';
+    select.appendChild(optionDefault);
+
+    data.forEach(casa => {
+      const option = document.createElement('option');
+      option.value = casa.name;
+      option.textContent = casa.name;
+      select.appendChild(option);
+    });
+  }
+
+  // =======================================
+  // ORDENAR Tablas
+  // =======================================
+ 
+
+  function toggleSortCompra() {
+    if (sortStateCompra === 'none') {
+      sortStateCompra = 'asc';
+    } else if (sortStateCompra === 'asc') {
+      sortStateCompra = 'desc';
+    } else {
+      sortStateCompra = 'none';
+    }
+    reorderCompra();
+  }
+
+  function reorderCompra() {
+    
+    let arrayToRender = [...casasArray];
+
+    if (sortStateCompra === 'asc') {
+      arrayToRender.sort((a, b) => parseFloat(a.buy) - parseFloat(b.buy));
+    } else if (sortStateCompra === 'desc') {
+      arrayToRender.sort((a, b) => parseFloat(b.buy) - parseFloat(a.buy));
+    }
+    
+
+    fillCompraTable(arrayToRender);
+  }
+
+  function toggleSortVenta() {
+    if (sortStateVenta === 'none') {
+      sortStateVenta = 'asc';
+    } else if (sortStateVenta === 'asc') {
+      sortStateVenta = 'desc';
+    } else {
+      sortStateVenta = 'none';
+    }
+    reorderVenta();
+  }
+
+  function reorderVenta() {
+    let arrayToRender = [...casasArray];
+
+    if (sortStateVenta === 'asc') {
+      arrayToRender.sort((a, b) => parseFloat(a.sell) - parseFloat(b.sell));
+    } else if (sortStateVenta === 'desc') {
+      arrayToRender.sort((a, b) => parseFloat(b.sell) - parseFloat(a.sell));
+    }
+    fillVentaTable(arrayToRender);
+  }
+
+  // ================================
+  // FETCH: Historial
+  // ================================
+  function loadHistorial() {
+    fetch(`${baseUrl}/historial`)
+      .then(response => response.json())
+      .then(data => {
+        console.log('Historial =>', data);
+        const array = Array.isArray(data.historial) ? data.historial : [];
+        if (!Array.isArray(array)) {
+          console.error('Error: La API no devolvió un array válido en "historial"', data);
+          return;
+        }
+        const formateado = array
+          .map(item => ({
+            ...item,
+            buyChange: item.old_buy + ' → ' + item.new_buy,
+            sellChange: item.old_sell + ' → ' + item.new_sell
+          }))
+          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+          .slice(0, 15);
+
+        historialArray = formateado;
+        fillHistorialTable(historialArray);
+      })
+      .catch(err => console.error('Error al cargar historial:', err));
+  }
+
+  // Rellena tabla de HISTORIAL
+  function fillHistorialTable(data) {
+    const tbody = document.querySelector('#historialTable tbody');
+    tbody.innerHTML = '';
+
+    data.forEach(item => {
+      const row = document.createElement('tr');
+
+      // Casa de Cambio
+      const cellName = document.createElement('td');
+      cellName.textContent = item.name;
+      row.appendChild(cellName);
+
+      // Cambio de Compra
+      const cellBuyChange = document.createElement('td');
+      cellBuyChange.textContent = item.buyChange;
+      row.appendChild(cellBuyChange);
+
+      // Cambio de Venta
+      const cellSellChange = document.createElement('td');
+      cellSellChange.textContent = item.sellChange;
+      row.appendChild(cellSellChange);
+
+      // Hora
+      const cellTimestamp = document.createElement('td');
+      cellTimestamp.textContent = formatTimestamp(item.timestamp);
+      row.appendChild(cellTimestamp);
+
+      tbody.appendChild(row);
+    });
+  }
+
+  // ================================
+  // FETCH: Dólar Perú (Sunat y Paralelo)
+  // ================================
+  function loadDolarPeru() {
+    fetch(`${baseUrl}/dolarperu`)
+      .then(response => response.json())
+      .then(data => {
+        console.log('DólarPerú =>', data);
+
+        const dolarObj = data.dolar_peru;
+        if (!dolarObj) {
+          console.error('No se encontró la clave "dolar_peru" en la respuesta', data);
+          return;
+        }
+
+        dolarPeruData = {
+          fecha: dolarObj.fecha || 'Fecha no disponible',
+          sunat: dolarObj.sunat || { compra: 0, venta: 0 },
+          paralelo: dolarObj.paralelo || { compra: 0, venta: 0 }
+        };
+
+        showDolarPeruData();
+      })
+      .catch(err => console.error('Error al cargar DolarPeru:', err));
+  }
+
+  function showDolarPeruData() {
+    if (!dolarPeruData) return;
+
+    document.getElementById('sunatCompra').textContent = dolarPeruData.sunat.compra;
+    document.getElementById('sunatVenta').textContent  = dolarPeruData.sunat.venta;
+    document.getElementById('paraleloCompra').textContent = dolarPeruData.paralelo.compra;
+    document.getElementById('paraleloVenta').textContent  = dolarPeruData.paralelo.venta;
+    document.getElementById('fechaActualizacion').textContent = formatFecha(dolarPeruData.fecha);
+
+    document.getElementById('dolarperuInfo').style.display = 'flex';
+  }
+
+  // ================================
+  // SIMULADOR
+  // ================================
+  function calcularCambio() {
+    const selectCasa = document.getElementById('casaSeleccionada');
+    const casaName = selectCasa.value;
+    const tipoOperacion = document.getElementById('tipoOperacion').value; // "compra" o "venta"
+    const monto = parseFloat(document.getElementById('monto').value) || 0;
+    const moneda = document.getElementById('moneda').value; // "soles" o "dolares"
+
+    if (!casaName || !monto || !casasArray.length) {
+      document.getElementById('resultados').style.display = 'none';
+      return;
+    }
+
+    // Buscamos la casa seleccionada en el array
+    const casaObj = casasArray.find(item => item.name === casaName);
+    if (!casaObj) {
+      document.getElementById('resultados').style.display = 'none';
+      return;
+    }
+
+    // Tasa según operación
+    const tasa = (tipoOperacion === 'compra') ? casaObj.buy : casaObj.sell;
+    if (!tasa) {
+      document.getElementById('resultados').style.display = 'none';
+      return;
+    }
+
+    // Cálculo de conversión
+    let montoConvertido = 0;
+    if (moneda === 'soles') {
+      // De soles a dólares
+      montoConvertido = monto / tasa;
+    } else {
+      // De dólares a soles
+      montoConvertido = monto * tasa;
+    }
+
+    // Comparaciones con Sunat y Paralelo
+    const sunat = dolarPeruData ? dolarPeruData.sunat : { compra: 0, venta: 0 };
+    const paralelo = dolarPeruData ? dolarPeruData.paralelo : { compra: 0, venta: 0 };
+
+    let margenSunat = 0;
+    let margenParalelo = 0;
+
+    if (tipoOperacion === 'compra') {
+      margenSunat = sunat.compra - tasa;       
+      margenParalelo = paralelo.compra - tasa;
+    } else {
+      margenSunat = tasa - sunat.venta;
+      margenParalelo = tasa - paralelo.venta;
+    }
+
+    document.getElementById('montoConvertido').textContent = montoConvertido.toFixed(2);
+    document.getElementById('comparacionSunat').textContent = margenSunat.toFixed(3);
+    document.getElementById('comparacionParalelo').textContent = margenParalelo.toFixed(3);
+    document.getElementById('resultados').style.display = 'block';
+  }
+
+  // ================================
+  // Funciones auxiliares de formateo
+  // ================================
+  function formatFecha(dateStr) {
+    if (!dateStr) return '';
+   
+    const normalized = dateStr.replace(/\.\d+/, '') + 'Z';
+    const d = new Date(normalized);
+    if (isNaN(d.getTime())) {
+      return 'Fecha inválida';
+    }
+    // Zona horaria de Lima
+    const options = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+      timeZone: 'America/Lima'
+    };
+    return d.toLocaleString('es-PE', options);
+  }
+
+  function formatTimestamp(ts) {
+    if (!ts) return '';
+    const normalized = ts.replace(/\.\d+/, '') + 'Z';
+    const date = new Date(normalized);
+    if (isNaN(date.getTime())) {
+      return 'Hora Inválida';
+    }
+    const options = {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+      timeZone: 'America/Lima'
+    };
+    return date.toLocaleTimeString('es-PE', options);
+  }
+</script>
+</body>
+</html>
